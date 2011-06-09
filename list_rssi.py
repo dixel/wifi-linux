@@ -8,7 +8,7 @@ import glib
 from dbus.mainloop.glib import DBusGMainLoop 
 import Gnuplot 
 class WiFiList(): 
-    def __init__(self, watched):
+    def __init__(self, timer, watched):
         self.bus = dbus.SystemBus()
         self.NM = 'org.freedesktop.NetworkManager'
         self.bus.add_signal_receiver(self.handle_change, None, self.NM + '.AccessPoint', None, None)
@@ -19,6 +19,8 @@ class WiFiList():
         self.timing = 0
         self.data = {}
         self.watched = watched
+        self.timer = timer
+        self.plotchange = 0
 
     def __repr__(self):
         return "\n".join(["%20s: %5d" % (k, j) for k, j in self.rssid.items()])
@@ -45,7 +47,10 @@ class WiFiList():
             self.rssid["".join(["%s" % k for k in ssid])] =  int(strength)
 
     def handle_change(self, kwargs = None):
+        print "changed"
         self.form_rssi_dic()
+        if self.plotchange == 1:
+            self.timeout()
 
     def plotter(self, data):
         self.gnpl('set terminal x11 size 1024 3000')
@@ -81,16 +86,23 @@ class WiFiList():
 
     def iowch(self, arg, key, loop):
         cmd = sys.stdin.readline()
-        if "pl" in cmd: 
+        if "plot" in cmd: 
             print 'plotting your wifi data'
             self.plotter(self.data)
-        elif "bp" in cmd:
+        if "bp" in cmd:
             print 'added a breakpoint'
             self.timeout(breakpoint = True)
-        if "st" in cmd:
+        if "stop" in cmd:
             print 'stop program'
             loop.quit()
             return False
+        if "print" in cmd:
+            print self
+        if "start" in cmd:
+            gobject.timeout_add(self.timer,self.timeout)
+        if "start changer" in cmd:
+            print "started plotting as a function of changes"
+            self.plotchange = 1
         return True
 
 if __name__ == '__main__':
@@ -101,9 +113,8 @@ if __name__ == '__main__':
     except:
         timeout = 5000
     print timeout
-    wfl = WiFiList(sys.argv[2:])
+    wfl = WiFiList(timeout, sys.argv[2:])
     wfl.form_rssi_dic()
-    gobject.timeout_add(timeout,wfl.timeout)
     gobject.io_add_watch(sys.stdin, glib.IO_IN, wfl.iowch, loop)
     print wfl
     loop.run()
