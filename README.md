@@ -1,6 +1,12 @@
 # Wifi-linux
 Simple python script, which collects RSSI information about wifi access points around you and draws graphics showing RSSI activity.
-##Usage
+
+## Dependencies
+
+```gnuplot-x11```
+
+## Usage
+
 ./list_rssi.py <tick tim (secs)> <Watched access point1> <Watch access point2> ....
 
 After start you recieve an output of all access points around you.
@@ -17,7 +23,8 @@ After that you will be prompted for a command.
         start data processing for every event on adapter
     print
         print rssi data
-###Example
+
+### Example
     ./list_rssi.py 5 WifiHome WifiBuddy Dlink200
     ...wait for some time
     bp
