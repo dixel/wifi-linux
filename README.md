@@ -44,7 +44,7 @@ After that you will be prompted for a command.
     ...watching your graphic
     stop
 
-##Commit hist
+## Commit history
 
 ```
     25.05.2017: Migrated from gnuplot to matplotlib, less dependencies, simplification.
