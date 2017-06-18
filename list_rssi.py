@@ -5,7 +5,9 @@ import gobject
 import sys
 import glib
 from dbus.mainloop.glib import DBusGMainLoop
+import logging as log
 import argparse
+import time
 try:
     import matplotlib.pyplot as plt
 except ImportError:
@@ -23,6 +25,8 @@ class WiFiList():
         self.rssid = {}
         self.data = {}
         self.watched = watched
+        self.start_time = time.time()
+        self.xaxis = []
 
     def __repr__(self):
         return "\n".join(["%35s: %5d" % (k, j) for k, j in self.rssid.items()])
@@ -65,12 +69,13 @@ class WiFiList():
         else:
             graphs = []
             for i in self.data:
-                graphs.append(plt.plot(self.data[i], label=i))
+                graphs.append(plt.plot(self.xaxis, self.data[i], label=i))
             plt.legend(handles=[g[0] for g in graphs])
             plt.show()
 
     def handle_rssi_change(self, *_):
         self.form_rssi_dic()
+        self.xaxis.append(time.time() - self.start_time)
         for i in [x for x in self.watched if x in self.rssid]:
             if i in self.data.keys():
                 self.data[i].append(self.rssid[i])
