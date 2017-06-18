@@ -70,6 +70,8 @@ class WiFiList():
             graphs = []
             for i in self.data:
                 graphs.append(plt.plot(self.xaxis, self.data[i], label=i))
+            plt.xlabel("Seconds")
+            plt.ylabel("RSSI, %")
             plt.legend(handles=[g[0] for g in graphs])
             plt.show()
 
