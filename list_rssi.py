@@ -1,9 +1,10 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- encoding: utf-8 -*-
+
 import dbus
-import gobject
 import sys
-import glib
+from gi.repository import GObject as gobject
+from gi.repository import GLib as glib
 from dbus.mainloop.glib import DBusGMainLoop
 import logging as log
 import argparse
@@ -29,7 +30,7 @@ class WiFiList():
         self.xaxis = []
 
     def __repr__(self):
-        return "\n".join(["%35s: %5d" % (k, j) for k, j in self.rssid.items()])
+        return u"\n".join(["%35s: %5d" % (k, j) for k, j in self.rssid.items()])
 
     def dbus_get_property(self, prop, member, proxy):
         return proxy.Get(
@@ -55,7 +56,7 @@ class WiFiList():
         for i in self.repopulate_ap_list():
             ssid = self.dbus_get_property('Ssid', 'AccessPoint', i)
             strength = self.dbus_get_property('Strength', 'AccessPoint', i)
-            self.rssid["".join(["%s" % k for k in ssid])] = int(strength)
+            self.rssid[b"".join([b"%s" % k.to_bytes(1, "little")  for k in ssid]).decode('utf-8')] = int(strength)
 
     def plotter(self):
         try:
@@ -89,13 +90,13 @@ class WiFiList():
     def iowch(self, _arg, _key, loop):
         cmd = sys.stdin.readline()
         if cmd.startswith("stop"):
-            print 'stopping the program'
+            print('stopping the program')
             loop.quit()
             return False
         elif cmd.startswith("print"):
-            print self
+            print(self)
         elif cmd.startswith("plot"):
-            print 'plotting your rssi data'
+            print('plotting your rssi data')
             self.plotter()
         return True
 
@@ -116,6 +117,6 @@ if __name__ == '__main__':
     wfl = WiFiList(args.networks)
     wfl.form_rssi_dic()
     gobject.io_add_watch(sys.stdin, glib.IO_IN, wfl.iowch, loop)
-    print wfl
+    print(wfl)
     if args.interactive:
         loop.run()
