@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 # -*- encoding: utf-8 -*-
 
 import dbus
@@ -30,7 +30,7 @@ class WiFiList():
         self.xaxis = []
 
     def __repr__(self):
-        return u"\n".join(["%35s: %5d" % (k, j) for k, j in self.rssid.items()])
+        return b"\n".join([b"%35s: %5d" % (k, j) for k, j in self.rssid.items()]).decode('utf-8')
 
     def dbus_get_property(self, prop, member, proxy):
         return proxy.Get(
@@ -52,11 +52,17 @@ class WiFiList():
                 res.append(self.bus.get_object(self.NM, j))
         return res
 
+    def get_ssid_string(self, ssid):
+        if sys.version_info[0] == 2: # python2
+            return b"%s" % bytearray(ssid)
+        elif sys.version_info[0] >= 3: # python3
+            return b"".join([b"%s" % k.to_bytes(1, "little") for k in ssid])
+
     def form_rssi_dic(self):
         for i in self.repopulate_ap_list():
             ssid = self.dbus_get_property('Ssid', 'AccessPoint', i)
             strength = self.dbus_get_property('Strength', 'AccessPoint', i)
-            self.rssid[b"".join([b"%s" % k.to_bytes(1, "little")  for k in ssid]).decode('utf-8')] = int(strength)
+            self.rssid[self.get_ssid_string(ssid)] = int(strength)
 
     def plotter(self):
         try:
