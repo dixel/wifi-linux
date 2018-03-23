@@ -14,6 +14,8 @@ try:
 except ImportError:
     pass
 
+def is_python_3():
+    return sys.version_info[0] >= 3
 
 class WiFiList():
     def __init__(self, watched):
@@ -30,7 +32,11 @@ class WiFiList():
         self.xaxis = []
 
     def __repr__(self):
-        return b"\n".join([b"%35s: %5d" % (k, j) for k, j in self.rssid.items()]).decode('utf-8')
+        byte_str = b"\n".join([b"%35s: %5d" % (k, j) for k, j in self.rssid.items()])
+        if is_python_3():
+            return byte_str.decode('utf-8')
+        else:
+            return byte_str
 
     def dbus_get_property(self, prop, member, proxy):
         return proxy.Get(
@@ -53,10 +59,10 @@ class WiFiList():
         return res
 
     def get_ssid_string(self, ssid):
-        if sys.version_info[0] == 2: # python2
-            return b"%s" % bytearray(ssid)
-        elif sys.version_info[0] >= 3: # python3
+        if is_python_3():
             return b"".join([b"%s" % k.to_bytes(1, "little") for k in ssid])
+        else:
+            return b"%s" % bytearray(ssid)
 
     def form_rssi_dic(self):
         for i in self.repopulate_ap_list():
