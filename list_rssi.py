@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 # -*- encoding: utf-8 -*-
+
 import dbus
-import gobject
 import sys
-import glib
+from gi.repository import GObject as gobject
+from gi.repository import GLib as glib
 from dbus.mainloop.glib import DBusGMainLoop
 import logging as log
 import argparse
@@ -13,6 +14,11 @@ try:
 except ImportError:
     pass
 
+def is_python_3():
+    return sys.version_info[0] >= 3
+
+def is_python_2():
+    return not(is_python_3())
 
 class WiFiList():
     def __init__(self, watched):
@@ -25,6 +31,8 @@ class WiFiList():
         self.rssid = {}
         self.data = {}
         self.watched = watched
+        if is_python_2():
+            self.watched = [i.decode('utf-8') for i in watched]
         self.start_time = time.time()
         self.xaxis = []
 
@@ -51,11 +59,17 @@ class WiFiList():
                 res.append(self.bus.get_object(self.NM, j))
         return res
 
+    def get_ssid_string(self, ssid):
+        if is_python_3():
+            return b"".join([b"%s" % k.to_bytes(1, "little") for k in ssid]).decode('utf-8')
+        else:
+            return b"%s" % bytearray(ssid).decode('utf-8')
+
     def form_rssi_dic(self):
         for i in self.repopulate_ap_list():
             ssid = self.dbus_get_property('Ssid', 'AccessPoint', i)
             strength = self.dbus_get_property('Strength', 'AccessPoint', i)
-            self.rssid["".join(["%s" % k for k in ssid])] = int(strength)
+            self.rssid[self.get_ssid_string(ssid)] = int(strength)
 
     def plotter(self):
         try:
@@ -89,13 +103,13 @@ class WiFiList():
     def iowch(self, _arg, _key, loop):
         cmd = sys.stdin.readline()
         if cmd.startswith("stop"):
-            print 'stopping the program'
+            print('stopping the program')
             loop.quit()
             return False
         elif cmd.startswith("print"):
-            print self
+            print(self.__repr__())
         elif cmd.startswith("plot"):
-            print 'plotting your rssi data'
+            print('plotting your rssi data')
             self.plotter()
         return True
 
@@ -116,6 +130,6 @@ if __name__ == '__main__':
     wfl = WiFiList(args.networks)
     wfl.form_rssi_dic()
     gobject.io_add_watch(sys.stdin, glib.IO_IN, wfl.iowch, loop)
-    print wfl
+    print(wfl.__repr__())
     if args.interactive:
         loop.run()
