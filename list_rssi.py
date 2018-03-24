@@ -17,6 +17,9 @@ except ImportError:
 def is_python_3():
     return sys.version_info[0] >= 3
 
+def is_python_2():
+    return not(is_python_3())
+
 class WiFiList():
     def __init__(self, watched):
         self.bus = dbus.SystemBus()
@@ -28,15 +31,13 @@ class WiFiList():
         self.rssid = {}
         self.data = {}
         self.watched = watched
+        if is_python_2():
+            self.watched = [i.decode('utf-8') for i in watched]
         self.start_time = time.time()
         self.xaxis = []
 
     def __repr__(self):
-        byte_str = b"\n".join([b"%35s: %5d" % (k, j) for k, j in self.rssid.items()])
-        if is_python_3():
-            return byte_str.decode('utf-8')
-        else:
-            return byte_str
+        return "\n".join(["%35s: %5d" % (k, j) for k, j in self.rssid.items()])
 
     def dbus_get_property(self, prop, member, proxy):
         return proxy.Get(
@@ -60,9 +61,9 @@ class WiFiList():
 
     def get_ssid_string(self, ssid):
         if is_python_3():
-            return b"".join([b"%s" % k.to_bytes(1, "little") for k in ssid])
+            return b"".join([b"%s" % k.to_bytes(1, "little") for k in ssid]).decode('utf-8')
         else:
-            return b"%s" % bytearray(ssid)
+            return b"%s" % bytearray(ssid).decode('utf-8')
 
     def form_rssi_dic(self):
         for i in self.repopulate_ap_list():
@@ -106,7 +107,7 @@ class WiFiList():
             loop.quit()
             return False
         elif cmd.startswith("print"):
-            print(self)
+            print(self.__repr__())
         elif cmd.startswith("plot"):
             print('plotting your rssi data')
             self.plotter()
@@ -129,6 +130,6 @@ if __name__ == '__main__':
     wfl = WiFiList(args.networks)
     wfl.form_rssi_dic()
     gobject.io_add_watch(sys.stdin, glib.IO_IN, wfl.iowch, loop)
-    print(wfl)
+    print(wfl.__repr__())
     if args.interactive:
         loop.run()
